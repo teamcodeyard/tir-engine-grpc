@@ -141,11 +141,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let port = std::env::var("PORT").unwrap_or_else(|_| "50051".into());
     let addr = format!("0.0.0.0:{port}").parse()?;
     let secret = std::env::var("OPENAI_SK").expect("OPENAI_SK should be set");
-
+    let is_development = std::env::var("IS_DEVELOPMENT").map(|s| s.to_ascii_lowercase() == "true").unwrap_or(false);
+    
+    if(is_development){
+        println!("\n🚨 tir-engine is in development mode, all answers will be mocked!\n")
+    }
     assert_ne!(secret.as_str(), "", "OPENAI_SK should not be empty");
 
-    let tir_server = TirServer {
-        gpt: tirengine::GPT::new(secret),
+    let tir_server = match is_development {
+        true => TirServer {
+            gpt: tirengine::GPT::new_development(),
+        },
+        _ =>   TirServer { 
+            gpt: tirengine::GPT::new(secret) 
+        }
     };
 
     tracing::debug!(
